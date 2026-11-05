@@ -1,0 +1,92 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.7'
+      - name: Validate Syntax
+        run: |
+          python --version
+          echo "Commit SHA: ${{ github.sha }}"
+          python -m py_compile task_app.py
+          python -m py_compile tests/*.py
+          echo "Синтаксис корректен"
+
+  test:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.7'
+      - name: Run Tests
+        run: python -m unittest discover -s tests -v
+
+  package:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create dist folder
+        run: |
+          mkdir -p dist
+          cp task_app.py README.md Dockerfile tasks.json.example dist/
+          echo "CI_COMMIT_SHA=${{ github.sha }}" > dist/manifest.txt
+          echo "CI_PIPELINE_ID=${{ github.run_id }}" >> dist/manifest.txt
+          echo "FILES:" >> dist/manifest.txt
+          ls -1 dist >> dist/manifest.txt
+          cat dist/manifest.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/
+          retention-days: 7
+
+  deploy_test:
+    needs: package
+    runs-on: ubuntu-latest
+    environment:
+      name: test/tasks
+      url: http://example.local:8101
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/
+      - name: Deploy and Smoke Test
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          APP_PORT: "8101"
+        run: |
+          if [ -z "$DEPLOY_TOKEN" ]; then echo "DEPLOY_TOKEN не задан" && exit 1; fi
+          echo "DEPLOY_TOKEN задан (значение скрыто)"
+          echo "APP_PORT=$APP_PORT"
+          mkdir -p deploy/test
+          cp -r dist/* deploy/test/
+          python deploy_check.py
+          echo "Deploy time: $(date -u +%FT%TZ)" > deployment.txt
+          echo "Commit: ${{ github.sha }}" >> deployment.txt
+          echo "Environment: test/tasks" >> deployment.txt
+          echo "Status: SUCCESS" >> deployment.txt
+      - name: Upload deployment log
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-log
+          path: deployment.txt
