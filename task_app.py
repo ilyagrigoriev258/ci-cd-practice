@@ -11,9 +11,14 @@ DATA_FILE = os.environ.get("TASKS_FILE", "tasks.json")
 def load_tasks(path=DATA_FILE):
     if not os.path.exists(path):
         return []
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:  # Если файл пустой
+                return []
+            return json.loads(content)
+    except json.JSONDecodeError:
+        return []
 
 def save_tasks(tasks, path=DATA_FILE):
     with open(path, "w", encoding="utf-8") as f:
