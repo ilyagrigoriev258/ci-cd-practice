@@ -26,8 +26,8 @@ def save_tasks(tasks, path=DATA_FILE):
 
 def add_task(title, author="anonymous", priority="normal", path=DATA_FILE):
     """Добавляет задачу. Пустое название запрещено."""
-    #if not title or not title.strip():
-        #raise ValueError("Название задачи не может быть пустым")
+    if not title or not title.strip():
+        raise ValueError("Название задачи не может быть пустым")
     if priority not in ("low", "normal", "high"):
         raise ValueError("Недопустимый приоритет")
     tasks = load_tasks(path)
