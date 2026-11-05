@@ -80,7 +80,12 @@ jobs:
           echo "APP_PORT=$APP_PORT"
           mkdir -p deploy/test
           cp -r dist/* deploy/test/
-          python deploy_check.py
+          
+          # Переходим в папку с развернутым приложением и запускаем проверку
+          cd deploy/test
+          python ../../deploy_check.py
+          cd ../..
+          
           echo "Deploy time: $(date -u +%FT%TZ)" > deployment.txt
           echo "Commit: ${{ github.sha }}" >> deployment.txt
           echo "Environment: test/tasks" >> deployment.txt
