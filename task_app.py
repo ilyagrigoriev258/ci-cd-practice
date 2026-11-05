@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Простое приложение для управления задачами."""
 import argparse
 import json
@@ -14,7 +13,7 @@ def load_tasks(path=DATA_FILE):
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-            if not content:  # Если файл пустой
+            if not content: 
                 return []
             return json.loads(content)
     except json.JSONDecodeError:
@@ -27,8 +26,8 @@ def save_tasks(tasks, path=DATA_FILE):
 
 def add_task(title, author="anonymous", priority="normal", path=DATA_FILE):
     """Добавляет задачу. Пустое название запрещено."""
-    if not title or not title.strip():
-        raise ValueError("Название задачи не может быть пустым")
+    #if not title or not title.strip():
+        #raise ValueError("Название задачи не может быть пустым")
     if priority not in ("low", "normal", "high"):
         raise ValueError("Недопустимый приоритет")
     tasks = load_tasks(path)
